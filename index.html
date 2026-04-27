@@ -3,21 +3,65 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Jarvis Workflow</title>
-  <style>html,body,#app{height:100%;margin:0}body{font-family:Inter,Arial,sans-serif}</style>
+  <title>Jarvis Excalidraw</title>
+  <style>
+    html, body, #app { height: 100%; margin: 0; }
+    body { font-family: Inter, Arial, sans-serif; }
+    .topbar {
+      position: fixed; top: 12px; left: 12px; z-index: 20;
+      background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+      border: 1px solid #ddd; border-radius: 12px; padding: 10px 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.08);
+      max-width: min(92vw, 520px);
+    }
+    .topbar code { background:#f5f5f5; padding:2px 6px; border-radius:6px; }
+    .topbar a { color: #0969da; text-decoration: none; }
+  </style>
 </head>
 <body>
+  <div class="topbar" id="info">Jarvis Excalidraw lädt…</div>
   <div id="app"></div>
   <script type="module">
     import React from 'https://esm.sh/react@18';
     import { createRoot } from 'https://esm.sh/react-dom@18/client';
     import { Excalidraw } from 'https://esm.sh/@excalidraw/excalidraw@0.18.0?external=react,react-dom';
-    const initialData = await fetch('./jarvis-workflow.excalidraw').then(r => r.json());
+
+    const params = new URLSearchParams(window.location.search);
+    const scene = params.get('scene') || 'jarvis-workflow.excalidraw';
+    const view = params.get('view') === '1';
+    const info = document.getElementById('info');
+
+    let initialData = undefined;
+    try {
+      initialData = await fetch(`./${scene}`).then(r => {
+        if (!r.ok) throw new Error(`Scene not found: ${scene}`);
+        return r.json();
+      });
+      info.innerHTML = `
+        <strong>Jarvis Excalidraw</strong><br>
+        Datei: <code>${scene}</code><br>
+        <a href="./${scene}">Raw file</a> ·
+        <a href="?scene=${encodeURIComponent(scene)}">Edit</a> ·
+        <a href="?scene=${encodeURIComponent(scene)}&view=1">View</a>
+      `;
+    } catch (err) {
+      info.innerHTML = `<strong>Fehler:</strong> ${err.message}`;
+    }
+
     createRoot(document.getElementById('app')).render(
       React.createElement(Excalidraw, {
         initialData,
-        viewModeEnabled: true,
-        UIOptions: { canvasActions: { export: true, saveToActiveFile: false, loadScene: false } }
+        viewModeEnabled: view,
+        theme: 'light',
+        UIOptions: {
+          canvasActions: {
+            loadScene: true,
+            saveToActiveFile: true,
+            export: true,
+            changeViewBackgroundColor: true,
+            clearCanvas: true,
+          }
+        }
       })
     );
   </script>
